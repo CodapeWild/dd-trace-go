@@ -24,7 +24,9 @@ func putBuf(buf *bytes.Buffer) {
 	bfp.Put(buf)
 }
 
-var sep = [4]byte{'~', '6', '@', 'ß'}
+type __sep__ struct{}
+
+var sep []byte
 
 // after injection data pattern
 // sep|origin body|sep|tracing carrier
@@ -46,10 +48,10 @@ func inject(span tracer.Span, body []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	bts := make([]byte, 8+len(body)+buf.Len())
-	i := copy(bts, sep[:])
+	bts := make([]byte, len(sep)+len(body)+len(sep)+buf.Len())
+	i := copy(bts, sep)
 	i += copy(bts[i:], body)
-	i += copy(bts[i:], sep[:])
+	i += copy(bts[i:], sep)
 	copy(bts[i:], buf.Bytes())
 
 	return bts, nil
@@ -60,7 +62,7 @@ func extract(body []byte) (ddtrace.SpanContext, []byte, error) {
 		return nil, body, nil
 	}
 
-	comb := bytes.Split(body[4:], sep[:])
+	comb := bytes.Split(body[len(sep):], sep)
 	carri := make(tracer.TextMapCarrier)
 	if err := gob.NewDecoder(bytes.NewBuffer(comb[1])).Decode(&carri); err != nil {
 		return nil, nil, err
@@ -78,7 +80,7 @@ func hasSpanContext(body []byte) bool {
 		}
 	}
 
-	return bytes.Count(body[4:], sep[:]) == 1
+	return bytes.Count(body[len(sep):], sep) == 1
 }
 
 func bodySize(body [][]byte) int {
@@ -88,4 +90,10 @@ func bodySize(body [][]byte) int {
 	}
 
 	return size
+}
+
+func init() {
+	buf := bytes.NewBuffer(nil)
+	gob.NewEncoder(buf).Encode(__sep__{})
+	sep = buf.Bytes()
 }
