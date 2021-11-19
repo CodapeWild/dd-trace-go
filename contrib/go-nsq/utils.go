@@ -26,6 +26,8 @@ func putBuf(buf *bytes.Buffer) {
 
 var sep = [4]byte{'~', '6', '@', 'ß'}
 
+// after injection data pattern
+// sep|origin body|sep|tracing carrier
 func inject(span tracer.Span, body []byte) ([]byte, error) {
 	if span == nil || span.Context() == nil || span.Context().TraceID() <= 0 || span.Context().SpanID() <= 0 {
 		return body, nil
