@@ -31,7 +31,7 @@ var sep []byte
 // after injection data pattern
 // sep|origin body|sep|tracing carrier
 func inject(span tracer.Span, body []byte) ([]byte, error) {
-	if span == nil || span.Context() == nil || span.Context().TraceID() <= 0 || span.Context().SpanID() <= 0 {
+	if hasSpanContext(body) || span == nil || span.Context() == nil || span.Context().TraceID() <= 0 || span.Context().SpanID() <= 0 {
 		return body, nil
 	}
 
